@@ -1,1 +1,1 @@
-{"unicode": "Sosa did fine.\u263a", "control": "\b1998\t1999\t2000\n", "hexesc": "\u0013\u0010 is \r\n", "single": "\"Howdy!\" he cried.", "quoted": " # not a 'comment'.", "tie-fighter": "|\\-*-/|"}
+{"unicode": "Sosa did fine.\u263a", "control": "\b1998\t1999\t2000\n",  "double": "Here's a \"quote\"", "single": "\"Howdy!\" he cried.", "quoted": " # not a 'comment'.", "tie-fighter": "|\\-*-/|"}

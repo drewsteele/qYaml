@@ -1,1 +1,8 @@
-{"null": null, "true": "y", "false": "n", "string": "12345"}
+{
+  "null": null,
+  "booleans": [
+    true,
+    false
+  ],
+  "string": "012345"
+}

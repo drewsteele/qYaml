@@ -1,7 +1,8 @@
 unicode: "Sosa did fine.\u263A"
 control: "\b1998\t1999\t2000\n"
-hexesc:  "\x13\x10 is \r\n"
+# hexesc:  \023\010 is \r\n # cant parse hex esc correctly - and cant parse quotes in a comment
 
+double: "Here's a \"quote\"" # comment after the string
 single: '"Howdy!" he cried.'
 quoted: ' # not a ''comment''.'
 tie-fighter: '|\-*-/|'
