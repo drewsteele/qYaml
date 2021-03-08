@@ -5,6 +5,7 @@
 opt:.Q.opt[.z.x];
 .test.debug:$[`debug in key opt; 1b; 0b];
 .test.testDir:`:tests;
+.test.testCases:("SSS*"; enlist ",")0: ` sv .test.testDir,`testCases.csv;
 exists:{not ()~key x};
 if[not exists .test.testDir; '"test dir ",string[.test.testDir]," doesn't exist"; exit 0];
 
@@ -36,32 +37,33 @@ equals:{[a; b]
 
 
 run:{[test]
-    res:@[{(.yml.load x; 1b)}; test; {("Failed to parse: ",x; 0b)}];
+    testFile:` sv .test.testDir,test;
+    res:@[{(.yml.load x; 1b)}; testFile; {("Failed to parse: ",x; 0b)}];
     if[.test.debug & not res[1]; 
         .log.debug"Failed to load yaml file ",string[test];
         .yml.load test];
     / get the expected json file if it exists
-    tn:first ` vs last ` vs test;
-    jn:` sv (.test.testDir;`json; ` sv tn,`json);
-    e:exists jn; 
-    json:@[{(.j.k raze read0 x;1b)};jn; {("Failed to parse json file ",string[x],": ",y;0b)}[jn;]];
-    expected:json[0];
-    pass:e&equals[actual:res[0];expected];
-    if[.test.debug&e&not pass; 
+    tc:select from .test.testCases where input = test;
+    if[0=count tc; 'string[test]," not found in testCases.csv"];
+    ex:` sv .test.testDir,first[tc]`expected; t:first[tc]`outputType;
+    r:$[t=`json; {.j.k raze read0 x}; t=`q; {value raze read0 x}; {[x;e] '"could not parse outputType ",string[x]}[t;]];
+    output:.[{[f;x] (f x; 1b)};(r;ex); {("Failed to parse expected file ",string[x],": ",y;0b)}[ex;]];
+    expected:output[0];
+    pass:equals[actual:res[0];expected];
+    if[.test.debug&not pass; 
         .log.debug"Actual does not match expected for ",string[test],"\n\n";
         .log.debug"Actual:\n\n",.Q.s[a:actual],"\n\n";
         .log.debug"Expected:\n\n",.Q.s[b:expected],"\n";
-        s:read0 test; / helpful for stepping into .yml.parse
+        s:read0 testFile; / helpful for stepping into .yml.parse
         'debug];
 
-    :`test`loadedOk`pass`expected`actual!(test; res[1]; pass; expected ;actual)
+    :`test`loadedOk`pass`expected`actual`comment!(test; res[1]; pass; expected ;actual; first tc`comment)
     };
 
 runAll:{[debug]
     debugOrig:@[value;`.test.debug; 0b]; / orig debug val
     .test.debug:$[1b~debug; 1b; 0b~debug; 0b; debugOrig];
-    p:` sv .test.testDir,`yaml;
-    tests:` sv/: p,/:{x where x like "*.yml"}key p;
+    tests:exec input from .test.testCases;
     res:run each tests;
     .test.debug:debugOrig;
     :res
@@ -118,7 +120,9 @@ if[`run in key opt;
 
 .rpt.tests:{[args]
     ok:"&#9989";fail:"&#10060"; status:10b!(ok;fail);
-    res:select test, loadedOk, pass from runAll[0b];
+    res:select test, loadedOk, pass, comment from runAll[0b];
+    s:exec totalTests:count[i], passed:"j"$sum pass, failed:"j"$sum not pass from res;
+    summary:.h.htc[`h1; "Summary"] , .h.htc[`p; .Q.s s];
     res:update status@loadedOk, status@pass from res;
     res:update run:{.h.htac[`form;enlist[`action]!enlist`tests;] .h.htac[`input; `type`name`value!(`submit;x;"Run");""]}each test from res;
     out:.h.htac[`div; enlist[`style]!enlist "height:60%;width:60%;border:1px solid black;overflow:auto;";].h.table res;
@@ -126,7 +130,7 @@ if[`run in key opt;
         test:`$first "=" vs first args;
         out:.rpt.run1test[test] , .h.br , out
         ];
-    :out
+    :summary , out
 
  };
 
@@ -135,7 +139,7 @@ if[`run in key opt;
     .test.debug:0b;
     t:run test;
     .test.debug:debugOrig;
-    input:read0 test;
+    input:read0 ` sv .test.testDir,test;
     actual:"\n" vs .Q.s t`actual;
 
     textareas:.h.htac[`label; enlist[`for]!enlist[`input];"Input: "],
