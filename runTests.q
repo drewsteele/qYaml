@@ -40,8 +40,8 @@ run:{[test]
     testFile:` sv .test.testDir,test;
     res:@[{(.yml.load x; 1b)}; testFile; {("Failed to parse: ",x; 0b)}];
     if[.test.debug & not res[1]; 
-        .log.debug"Failed to load yaml file ",string[test];
-        .yml.load test];
+        .log.debug"Failed to load yaml file ",string[testFile];
+        .yml.load testFile];
     / get the expected json file if it exists
     tc:select from .test.testCases where input = test;
     if[0=count tc; 'string[test]," not found in testCases.csv"];

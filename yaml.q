@@ -100,11 +100,12 @@
 .yml.parseSimple:{[s]
     if[0=type s; s:trim " "sv trim each s]; / if it is a list, fold it
     s1:trim .yml.rmComment s; / for use once we have checked it is not a string literal with a '#'
-    ls:lower s;
+    ls:lower s1;
     :$[
         "\""=first s             ; .yml.parseDoubleQuote s;
         "'"=first s              ; .yml.parseSingleQuote s;
-        all trim[s1] in .Q.n,"." ; @[value; s1; s1];
+        .yml.isNumber s1         ; @[value; s1; s1];
+        .yml.isTs s1             ; @[.yml.parseTs; s1; s1]; / default to input string if parsing fails
         s1 like "0x*"            ; 16 sv "0123456789abcdef"?/:2_lower s1;
         (s1 like "0o*")          ; 8 sv 10 vs "J"$2_s1;
         ls in key .yml.nbi       ; .yml.nbi ls;
@@ -125,3 +126,26 @@
         '"Failed to parse yaml - incorrect single quote usage: ",s];
     :ssr[1_-1_last[d]#s; "''";"'"]
     };
+
+/ it starts with a number as has valid number components (decimals or e notation)
+.yml.isNumber:{(x[0]in .Q.n)& all x in .Q.n,".e+"}
+/ allow iso or kdb date formats, e.g. 2001.01.01 or 2001-01-01
+.yml.isTs:{x like "[1-9][0-9][0-9][0-9][.-][0-3][0-9][.-][0-3][0-9]*"};
+.yml.parseTs:{
+    if[not lower[x 10]in"td "; '"invalid ts type"];
+    ts:trim @[x," ";10; :; "D"]; / convert to kdb timestamp format
+    ts:$[2 = count tss:" " vs 11_ts; 
+          ("D"$10#ts)+("N"$tss[0])+"U"$tss[1];
+        2 = count tss:"+" vs 11_ts;
+          ("D"$10#ts)+("N"$tss[0])+"U"$tss[1];
+        2 = count tss:"-" vs 11_ts;
+          ("D"$10#ts)+("N"$tss[0])-"U"$tss[1]; / subtract the offset this time
+        "Z" = last ts;
+          "P"$-1_ts;
+        "P"$ts
+       ];
+   if[any null ts; '"failed to parse timestamp"];
+   :ts
+   };
+
+

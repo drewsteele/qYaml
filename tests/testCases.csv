@@ -20,7 +20,7 @@ yaml/spec-02-18.yml, expected/spec-02-18.json, json, yaml.org/spec/1.2 spec-02-1
 yaml/spec-02-19.yml, expected/spec-02-19.json, json, yaml.org/spec/1.2 spec-02-19
 yaml/spec-02-20.yml, expected/spec-02-20.json, json, yaml.org/spec/1.2 spec-02-20
 yaml/spec-02-21.yml, expected/spec-02-21.txt,  q   , yaml.org/spec/1.2 spec-02-21 - not representable in json
-yaml/spec-02-22.yml, expected/spec-02-22.json, json, yaml.org/spec/1.2 spec-02-22
+yaml/spec-02-22.yml, expected/spec-02-22.txt , q   , yaml.org/spec/1.2 spec-02-22 - converted time types directly to kdb time types
 yaml/spec-02-23.yml, expected/spec-02-23.json, json, yaml.org/spec/1.2 spec-02-23
 yaml/spec-02-24.yml, expected/spec-02-24.json, json, yaml.org/spec/1.2 spec-02-24
 yaml/spec-02-25.yml, expected/spec-02-25.json, json, yaml.org/spec/1.2 spec-02-25
