@@ -10,7 +10,7 @@ if (not os.path.exists("json")):
 
 for f in files:
     print("Generating json for {}".format(f))
-    o = os.path.join("json",os.path.splitext(os.path.split(f)[-1])[0]+".json")
+    o = os.path.join("expected",os.path.splitext(os.path.split(f)[-1])[0]+".json")
     print("Saving to {}".format(o))
     try:
         with open(f, 'r') as yml_file, open(o, 'w') as json_file:
