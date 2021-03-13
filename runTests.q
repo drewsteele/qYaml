@@ -1,6 +1,5 @@
 @[system; "l yaml.q"; {-1"Failed to load yaml.q: ",x; exit 0}]
 
-.log.debug:{[msg] -1 string[.z.p]," | DEBUG | ",msg; :msg};
 
 opt:.Q.opt[.z.x];
 .test.debug:$[`debug in key opt; 1b; 0b];
@@ -8,12 +7,37 @@ opt:.Q.opt[.z.x];
 .test.testCases:("SSS*"; enlist ",")0: ` sv .test.testDir,`testCases.csv;
 exists:{not ()~key x};
 if[not exists .test.testDir; '"test dir ",string[.test.testDir]," doesn't exist"; exit 0];
+.log.debug:{[msg] if[.test.debug; -1 string[.z.p]," | DEBUG | ",msg; :msg];};
 
 equals:{[a; b]
-    if[count[a]<>count b; :0b];
     t:type each (a;b);
+    str:.Q.s (a;b);
+    / qYaml converts to kdb timestamps, json keeps as iso format - compare accoringly
+    if[all t=-12 10;
+        sa:.h.iso8601[a]; sb:$["Z"=last[b]; -1_b; b];
+        m:sb~count[sb]#sa;
+        .log.debug (("failed";"passed")@m)," match on iso timestamp - ", str;
+        :m
+        ];
+    if[all t=10 -12;
+        sb:.h.iso8601[b]; sa:$["Z"=last[a]; -1_a; a];
+        m:sa~count[sa]#sb;
+        .log.debug (("failed";"passed")@m)," match on iso timestamp - ", str;
+        :m
+        ];
+
+    if[asc[(a;b)]~asc((::);0n); 
+        .log.debug"Matched null values - ", str;
+        :1b
+        ];
+    if[count[a]<>count b; 
+        .log.debug "Different counts for values - ",str;
+        :0b];
+
     if[all t < 0;
-        :a=b
+        m:a=b;
+        .log.debug (("failed";"passed")@m)," match on atomic values - ", str;
+        :m
         ];
 
     if[all t within 0 20;

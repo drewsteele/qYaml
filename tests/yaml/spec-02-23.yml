@@ -7,7 +7,7 @@ picture: !!binary |
  Pz7Y6OjuDg4J+fn5OTk6enp
  56enmleECcgggoBADs=
 
-application specific tag: !something |
- The semantics of the tag
- above may be different for
- different documents.
+# application specific tag: !something |
+#  The semantics of the tag
+#  above may be different for
+#  different documents.
