@@ -247,4 +247,50 @@
    };
 
 
- / TODO - add .yml.dump for writing out yaml from kdb objects
+/ TODO - add .yml.dump for writing out yaml from kdb objects
+.yml.spaces:2;
+.yml.dump:{[x]
+    :$[10h~type x; enlist; (::)].yml.write[x;0];
+    };
+
+.yml.sc:"'\\\"\n\t",.Q.n; / if a string contains any of these characters then escape it in single quotes
+.yml.write:{[x;lvl]
+    s:(.yml.spaces*lvl)#" ";
+    out:$[
+      98h=type x; / table as list of dictionaries
+        raze enlist["- "],/:.yml.write[;lvl+1] each x;
+      99h=type x;
+        raze .yml.writeKv[;;lvl]'[key x; value x];
+      10h=type x; / escape single quotes, else leave as is for readability
+        $[any x in .yml.sc; "'",ssr[x;"'";"''"],"'"; x];
+      type[x] within 0 20h; 
+        raze .yml.writeLi[;lvl]each x;
+      type[x] in neg 19 12h;
+        .h.iso8601 x;
+      any nbi:x~/:value .yml.nbi;
+        .yml.nbi?x;
+      string x
+      ];
+    
+     :$[10h=type out; out;s,/:out]; / nest to correct level
+ 
+    };
+
+.yml.writeKv:{[k;v;lvl]
+    yk:$[10h=type k; k; string[k]],": ";
+    / nested value so increase lvl by one and enlist the key so it sits on its own line
+    if[nv:(type[v]>=0)&not 10h=type v; 
+        lvl:lvl+1; 
+        yk:enlist yk
+        ];
+    :$[not nv; enlist; (::)] yk , .yml.write[v; lvl];
+    };
+
+.yml.writeLi:{[li; lvl]
+    sep:"- ";
+    if[nv:(type[li]>=0)&not 10h=type li; 
+        sep:enlist sep;
+        lvl:lvl+1;
+        ];
+    :$[not nv; enlist; (::)] sep,.yml.write[li; lvl]
+    };

@@ -73,23 +73,44 @@ run:{[test]
     r:$[t=`json; {.j.k raze read0 x}; t=`q; {value raze read0 x}; {[x;e] '"could not parse outputType ",string[x]}[t;]];
     output:.[{[f;x] (f x; 1b)};(r;ex); {("Failed to parse expected file ",string[x],": ",y;0b)}[ex;]];
     expected:output[0];
-    pass:equals[actual:res[0];expected];
-    if[.test.debug&not pass; 
+    loadMatch:equals[actual:res[0];expected];
+    if[.test.debug&not loadMatch; 
         .log.debug"Actual does not match expected for ",string[test],"\n\n";
         .log.debug"Actual:\n\n",.Q.s[a:actual],"\n\n";
         .log.debug"Expected:\n\n",.Q.s[b:expected],"\n";
         s:read0 testFile; / helpful for stepping into .yml.parse
         'debug];
 
-    :`test`loadedOk`pass`expected`actual`comment!(test; res[1]; pass; expected ;actual; first tc`comment)
+    dump:@[{(.yml.dump x; 1b)}; expected; {("Failed to dump: ",x; 0b)}];
+    if[.test.debug & not dump[1]; 
+        .log.debug"Failed to dump q to yaml for ",string[testFile];
+        .yml.dump expected];
+
+    ld:@[{(.yml.load x 0; x[1]&1b)}; dump; {("Failed to load dump: ",x; 0b)}];
+    if[.test.debug & not ld[1]; 
+        .log.debug"Failed to load dump of yaml into q for ",string[testFile];
+        .yml.load dump 0];
+
+    dumpMatch:equals[ld 0; expected];
+    if[.test.debug&not dumpMatch;
+        .log.debug"dumped yaml does not match expected when loaded back in\n";
+        .log.debug"Actual:\n\n",.Q.s[a:actual],"\n\n";
+        .log.debug"Expected:\n\n",.Q.s[b:expected],"\n\n";
+        'debug];
+
+    pass:all (res 1; dump 1; ld 1; loadMatch; dumpMatch);
+
+    :`test`loadedOk`dumpOk`loadMatch`dumpMatch`pass`expected`actual`comment!(test; res[1]; dump[1]&ld[1]; loadMatch; dumpMatch; pass; expected ;actual; first tc`comment)
     };
 
 runAll:{[debug]
     debugOrig:@[value;`.test.debug; 0b]; / orig debug val
+    Porig:string system"P"; system"P 12"; / set larger precision
     .test.debug:$[1b~debug; 1b; 0b~debug; 0b; debugOrig];
     tests:exec input from .test.testCases;
     res:run each tests;
     .test.debug:debugOrig;
+    system"P ",Porig;
     :res
     };
 
@@ -144,10 +165,10 @@ if[`run in key opt;
 
 .rpt.tests:{[args]
     ok:"&#9989";fail:"&#10060"; status:10b!(ok;fail);
-    res:select test, loadedOk, pass, comment from runAll[0b];
+    res:select test, loadedOk, dumpOk, loadMatch, dumpMatch, pass, comment from runAll[0b];
     s:exec totalTests:count[i], passed:"j"$sum pass, failed:"j"$sum not pass from res;
     summary:.h.htc[`h1; "Summary"] , .h.htc[`p; .Q.s s];
-    res:update status@loadedOk, status@pass from res;
+    res:update status@loadedOk, status@dumpOk, status@loadMatch, status@dumpMatch, status@pass from res;
     res:update run:{.h.htac[`form;enlist[`action]!enlist`tests;] .h.htac[`input; `type`name`value!(`submit;x;"Run");""]}each test from res;
     out:.h.htac[`div; enlist[`style]!enlist "height:60%;width:60%;border:1px solid black;overflow:auto;";].h.table res;
     if[count args;
@@ -165,18 +186,19 @@ if[`run in key opt;
     .test.debug:debugOrig;
     input:read0 ` sv .test.testDir,test;
     actual:"\n" vs .Q.s t`actual;
+    expected:"\n" vs .Q.s t`expected;
+    dump:@[.yml.dump; t`expected; "Failed to dump kdb to yaml: ",];
 
     textareas:.h.htac[`label; enlist[`for]!enlist[`input];"Input: "],
-        .h.htac[`textarea; `id`name`rows`cols`readonly!(`input;`input; count input; 2 + max count each input;`true); "\n" sv input],
+        .h.htac[`textarea; `id`name`rows`cols`readonly!(`input;`input; 10|count input; 40&2 + max count each input;`true); "\n" sv input],
         .h.htac[`label; enlist[`for]!enlist[`actual];" Actual: "],
-        .h.htac[`textarea; `id`name`rows`cols`readonly!(`actual;`actual; count actual;2 + max count each actual;`true); "\n" sv actual];
+        .h.htac[`textarea; `id`name`rows`cols`readonly!(`actual;`actual; 10|count actual;40&2 + max count each actual;`true); "\n" sv actual];
 
-    if[not t`pass; 
-        expected:"\n" vs .Q.s t`expected;
-        textareas,:.h.htac[`label; enlist[`for]!enlist[`expected];" Expected: "],
-        .h.htac[`textarea; `id`name`rows`cols`readonly!(`expected;`expected; count expected;2 + max count each expected;`true); "\n" sv expected]
-        ];
+    textareas,:.h.htac[`label; enlist[`for]!enlist[`expected];" Expected: "],
+    .h.htac[`textarea; `id`name`rows`cols`readonly!(`expected;`expected; 10|count expected;40&2 + max count each expected;`true); "\n" sv expected];
     
+    textareas,:.h.htac[`label; enlist[`for]!enlist[`dump];" Dump: "],
+    .h.htac[`textarea; `id`name`rows`cols`readonly!(`dump;`dump; 10|count dump;40&2 + max count each dump;`true); "\n" sv dump];
     :.h.htc[`h1; string[test]," - ",("failed";"passed")t`pass], .h.br ,  .h.htac[`form; enlist[`action]!enlist`run1test; textareas]
 
   };
