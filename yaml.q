@@ -92,10 +92,10 @@
     if["+"=first/[s]; s:@[s;0;1_]; endWith:origNewLines#"\n"]; / + sign means keep oringal new lines
     if[0=count trim s[0]; s:1_s]; / drop empty first line
     tl:first l:{first where  " "<>x}each s;
-    if[not all {(x~"") or x like "#*"} each s where not l=tl;
+    if[not all {(x~"") or x like "#*"} each s where l<tl;
         '"invalid nesting level for literal string ",.Q.s s
         ];
-    :("\n" sv .yml.trim s@where tl=l),endWith;
+    :("\n" sv .yml.trim s@where tl<=l),endWith;
     };
 .yml.parseFoldedScalar:{[s]
     if[10h=type s; s:enlist s];
